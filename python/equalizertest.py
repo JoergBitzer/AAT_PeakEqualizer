@@ -3,14 +3,15 @@ import matplotlib.pyplot as plt
 import scipy.signal as signal
 
 fs = 44100
-f0 = 5000
-Q = 5
-dBgain = -12
+f0 = 2000
+Q = 1
+dBgain = 8
 
 
 A  = 10**(dBgain/40)   #  (for peaking and shelving EQ filters only)
 w0 = 2*np.pi*f0/fs
 alpha = np.sin(w0)/(2*Q) 
+print(A, w0, alpha)
 
 #            b0 =   1 + alpha*A
 #            b1 =  -2*cos(w0)
