@@ -117,7 +117,7 @@ void PeakEqualizerAudioProcessor::prepareToPlay (double sampleRate, int samplesP
     jassert(("number of channels should never be zero", nrofchannels>0));
 
     juce::ignoreUnused (samplesPerBlock);
-    m_fs = sampleRate;
+    m_fs = static_cast<float>(sampleRate);
     m_algo.prepareToPlay(sampleRate,samplesPerBlock,nrofchannels);
 }
 
