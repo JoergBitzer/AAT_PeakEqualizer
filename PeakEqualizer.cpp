@@ -54,6 +54,27 @@ void PeakEqualizerAudio::prepareToPlay(double sampleRate, int max_samplesPerBloc
 
 int PeakEqualizerAudio::processSynchronBlock(juce::AudioBuffer<float> & buffer, juce::MidiBuffer &midiMessages)
 {
+    bool somethingchanged = false;
+    somethingchanged |= m_gainParam.updateWithNotification(m_gain);
+    somethingchanged |= m_QParam.updateWithNotification(m_Q);
+    somethingchanged |= m_FreqParam.updateWithNotification(m_f0);
+    if (somethingchanged)
+    {
+        EqualizerErrorCode error = designPeakEqualizer(m_b, m_a, m_f0, m_Q, m_gain, m_fs);
+        if (error != NO_ERROR)
+        {
+            // handle error
+            m_b.resize(3);
+            m_a.resize(3);
+            m_b[0] = 1.0;
+            m_b[1] = 0.0;
+            m_b[2] = 0.0;
+            m_a[0] = 1.0;
+            m_a[1] = 0.0;
+            m_a[2] = 0.0;
+        }
+    }
+
     juce::ignoreUnused(midiMessages);
     int numChannels = buffer.getNumChannels();
     int numSamples = buffer.getNumSamples();
@@ -79,22 +100,48 @@ int PeakEqualizerAudio::processSynchronBlock(juce::AudioBuffer<float> & buffer, 
 void PeakEqualizerAudio::addParameter(std::vector<std::unique_ptr<juce::RangedAudioParameter>> &paramVector)
 {
     // this is just a placeholder (necessary for compiling/testing the template)
-    paramVector.push_back(std::make_unique<AudioParameterFloat>(g_paramExample.ID,
-        g_paramExample.name,
-        NormalisableRange<float>(g_paramExample.minValue, g_paramExample.maxValue),
-        g_paramExample.defaultValue,
-        g_paramExample.unitName,
-        AudioProcessorParameter::genericParameter));
-        // these are two additional lines with lambdas to convert data (to use delete )); after 
-        // AudioProcessorParameter::genericParameter and uncomment to activate)
-        // [](float value, int MaxLen) { value = int(exp(value) * 10) * 0.1;  return (String(value, MaxLen) + " Hz"); },
-        // [](const String& text) {return text.getFloatValue(); }));
+    paramVector.push_back(std::make_unique<AudioParameterFloat>(g_paramGain.ID,
+        g_paramGain.name,
+        NormalisableRange<float>(g_paramGain.minValue, g_paramGain.maxValue),
+        g_paramGain.defaultValue,
+        AudioParameterFloatAttributes().withLabel (g_paramGain.unitName)
+                                        .withCategory (juce::AudioProcessorParameter::genericParameter)
+                                        // or two additional lines with lambdas to convert data for display
+                                        // .withStringFromValueFunction (std::move ([](float value, int MaxLen) { value = int(exp(value) * 10) * 0.1f;  return (String(value, MaxLen) + " Hz"); }))
+                                        // .withValueFromStringFunction (std::move ([](const String& text) {return text.getFloatValue(); }))
+                        ));
+    // this is just a placeholder (necessary for compiling/testing the template)
+    paramVector.push_back(std::make_unique<AudioParameterFloat>(g_paramQ.ID,
+        g_paramQ.name,
+        NormalisableRange<float>(g_paramQ.minValue, g_paramQ.maxValue),
+        g_paramQ.defaultValue,
+        AudioParameterFloatAttributes().withLabel (g_paramQ.unitName)
+                                        .withCategory (juce::AudioProcessorParameter::genericParameter)
+                                        // or two additional lines with lambdas to convert data for display
+                                        .withStringFromValueFunction (std::move ([](float value, int MaxLen) { value = int(exp(value) * 100) * 0.01f;  return (String(value, MaxLen)); }))
+                                        .withValueFromStringFunction (std::move ([](const String& text) {return text.getFloatValue(); }))
+                        ));
+    // this is just a placeholder (necessary for compiling/testing the template)
+    paramVector.push_back(std::make_unique<AudioParameterFloat>(g_paramFreq.ID,
+        g_paramFreq.name,
+        NormalisableRange<float>(g_paramFreq.minValue, g_paramFreq.maxValue),
+        g_paramFreq.defaultValue,
+        AudioParameterFloatAttributes().withLabel (g_paramFreq.unitName)
+                                        .withCategory (juce::AudioProcessorParameter::genericParameter)
+                                        // or two additional lines with lambdas to convert data for display
+                                        .withStringFromValueFunction (std::move ([](float value, int MaxLen) { value = int(exp(value) * 10) * 0.1f;  return (String(value, MaxLen) + " Hz"); }))
+                                        .withValueFromStringFunction (std::move ([](const String& text) {return text.getFloatValue(); }))
+                        ));
 
 }
 
 void PeakEqualizerAudio::prepareParameter(std::unique_ptr<juce::AudioProcessorValueTreeState> &vts)
 {
-    juce::ignoreUnused(vts);
+    m_gainParam.prepareParameter(vts->getRawParameterValue(g_paramGain.ID));
+    m_QParam.prepareParameter(vts->getRawParameterValue(g_paramQ.ID));
+    m_QParam.changeTransformer(jade::AudioProcessParameter<float>::transformerFunc::exptransform);
+    m_FreqParam.prepareParameter(vts->getRawParameterValue(g_paramFreq.ID));
+    m_FreqParam.changeTransformer(jade::AudioProcessParameter<float>::transformerFunc::exptransform);
 }
 
 
