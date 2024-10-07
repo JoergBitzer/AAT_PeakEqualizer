@@ -7,16 +7,12 @@ version 1.0
 */
 
 #pragma once
-
+#define _USE_MATH_DEFINES
 #include <cmath>
-#include <vector>
-
 #ifndef M_PI    
     #define M_PI 3.14159265358979323846
 #endif
-
-
-
+#include <vector>
 /*
     This enumeration contains all possible error codes that can be returned by the designPeakEqualizer function.
     NO_ERROR: The function executed successfully without any problems.

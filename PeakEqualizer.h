@@ -35,6 +35,16 @@ public:
 
 private:
     int m_Latency = 0;
+	float m_fs = 44100.f;
+	float m_f0 = 1000.f;
+	float m_Q = 1.f;
+	float m_gain = 0.f;
+	std::vector<double> m_b;
+	std::vector<double> m_a;
+	std::vector<float> m_state_b1;
+	std::vector<float> m_state_b2;
+	std::vector<float> m_state_a1;
+	std::vector<float> m_state_a2;
 };
 
 class PeakEqualizerGUI : public juce::Component

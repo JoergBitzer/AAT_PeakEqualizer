@@ -1,6 +1,7 @@
 #include <math.h>
 #include "PeakEqualizer.h"
 
+#include "EqualizerDesign.h"
 
 PeakEqualizerAudio::PeakEqualizerAudio()
 :SynchronBlockProcessor()
@@ -20,12 +21,58 @@ void PeakEqualizerAudio::prepareToPlay(double sampleRate, int max_samplesPerBloc
     prepareSynchronProcessing(max_channels,synchronblocksize);
     m_Latency += synchronblocksize;
     // here your code
+    m_fs = sampleRate;
+    m_f0 = 4000.f;
+    m_Q = 9.f;
+    m_gain = 20.f;
+    EqualizerErrorCode error = designPeakEqualizer(m_b, m_a, m_f0, m_Q, m_gain, m_fs);
+    if (error != NO_ERROR)
+    {
+        // handle error
+        m_b.resize(3);
+        m_a.resize(3);
+        m_b[0] = 1.0;
+        m_b[1] = 0.0;
+        m_b[2] = 0.0;
+        m_a[0] = 1.0;
+        m_a[1] = 0.0;
+        m_a[2] = 0.0;
+    }
+    m_state_b1.resize(max_channels);
+    m_state_b2.resize(max_channels);
+    m_state_a1.resize(max_channels);
+    m_state_a2.resize(max_channels);
+    for (int i = 0; i < max_channels; i++)
+    {
+        m_state_b1[i] = 0.f;
+        m_state_b2[i] = 0.f;
+        m_state_a1[i] = 0.f;
+        m_state_a2[i] = 0.f;
+    }
 
 }
 
 int PeakEqualizerAudio::processSynchronBlock(juce::AudioBuffer<float> & buffer, juce::MidiBuffer &midiMessages)
 {
-    juce::ignoreUnused(buffer, midiMessages);
+    juce::ignoreUnused(midiMessages);
+    int numChannels = buffer.getNumChannels();
+    int numSamples = buffer.getNumSamples();
+    for (int channel = 0; channel < numChannels; channel++)
+    {
+        float* channelData = buffer.getWritePointer(channel);
+        for (int sample = 0; sample < numSamples; sample++)
+        {   
+            float In = channelData[sample];
+            float Out = m_b[0] * In + m_b[1] * m_state_b1[channel] + m_b[2] * m_state_b2[channel] 
+                    - m_a[1] * m_state_a1[channel] - m_a[2] * m_state_a2[channel];
+        
+            m_state_b2[channel] = m_state_b1[channel];
+            m_state_b1[channel] = In;
+            m_state_a2[channel] = m_state_a1[channel];
+            m_state_a1[channel] = Out;
+            channelData[sample] = Out;
+        }
+    }
     return 0;
 }
 
