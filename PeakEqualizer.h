@@ -12,7 +12,7 @@ const struct
 {
 	const std::string ID = "GainID";
 	const std::string name = "Gain";
-	const std::string unitName = "dB";
+	const std::string unitName = " dB";
 	const float minValue = -24.f;
 	const float maxValue = 24.f;
 	const float defaultValue = 0.f;
@@ -30,7 +30,7 @@ const struct
 {
 	const std::string ID = "FreqID";
 	const std::string name = "Freq";
-	const std::string unitName = "Hz";
+	const std::string unitName = " Hz";
 	const float minValue = logf(50.f);
 	const float maxValue = logf(15000.f);
 	const float defaultValue = logf(1000.f);
@@ -78,7 +78,7 @@ public:
 	void resized() override;
 private:
     juce::AudioProcessorValueTreeState& m_apvts;
-	juce::Slider m_gainSlider;
+	juce::Slider m_GainSlider;
 	juce::Slider m_QSlider;
 	juce::Slider m_FreqSlider;
 	std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> m_gainAttachment;

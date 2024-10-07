@@ -107,8 +107,8 @@ void PeakEqualizerAudio::addParameter(std::vector<std::unique_ptr<juce::RangedAu
         AudioParameterFloatAttributes().withLabel (g_paramGain.unitName)
                                         .withCategory (juce::AudioProcessorParameter::genericParameter)
                                         // or two additional lines with lambdas to convert data for display
-                                        // .withStringFromValueFunction (std::move ([](float value, int MaxLen) { value = int(exp(value) * 10) * 0.1f;  return (String(value, MaxLen) + " Hz"); }))
-                                        // .withValueFromStringFunction (std::move ([](const String& text) {return text.getFloatValue(); }))
+                                        .withStringFromValueFunction (std::move ([](float value, int MaxLen) { value = int((value) * 10) * 0.1f;  return (String(value, MaxLen)); }))
+                                        .withValueFromStringFunction (std::move ([](const String& text) {return text.getFloatValue(); }))
                         ));
     // this is just a placeholder (necessary for compiling/testing the template)
     paramVector.push_back(std::make_unique<AudioParameterFloat>(g_paramQ.ID,
@@ -129,7 +129,7 @@ void PeakEqualizerAudio::addParameter(std::vector<std::unique_ptr<juce::RangedAu
         AudioParameterFloatAttributes().withLabel (g_paramFreq.unitName)
                                         .withCategory (juce::AudioProcessorParameter::genericParameter)
                                         // or two additional lines with lambdas to convert data for display
-                                        .withStringFromValueFunction (std::move ([](float value, int MaxLen) { value = int(exp(value) * 10) * 0.1f;  return (String(value, MaxLen) + " Hz"); }))
+                                        .withStringFromValueFunction (std::move ([](float value, int MaxLen) { value = int(exp(value) * 10) * 0.1f;  return (String(value, MaxLen)); }))
                                         .withValueFromStringFunction (std::move ([](const String& text) {return text.getFloatValue(); }))
                         ));
 
@@ -148,7 +148,33 @@ void PeakEqualizerAudio::prepareParameter(std::unique_ptr<juce::AudioProcessorVa
 PeakEqualizerGUI::PeakEqualizerGUI(juce::AudioProcessorValueTreeState& apvts)
 :m_apvts(apvts)
 {
-    
+    m_GainSlider.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
+    m_GainSlider.setTextBoxStyle(juce::Slider::TextBoxAbove, false, 70, 20);
+    m_GainSlider.setRange(g_paramGain.minValue, g_paramGain.maxValue);
+    m_GainSlider.setTextValueSuffix(g_paramGain.unitName);
+    auto val = m_apvts.getRawParameterValue(g_paramGain.ID);
+    m_GainSlider.setValue(*val);
+    m_gainAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(m_apvts, g_paramGain.ID, m_GainSlider);
+    addAndMakeVisible(m_GainSlider);
+
+    m_QSlider.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
+    m_QSlider.setTextBoxStyle(juce::Slider::TextBoxAbove, false, 70, 20);
+    m_QSlider.setRange(g_paramQ.minValue, g_paramQ.maxValue);
+    m_QSlider.setTextValueSuffix(g_paramQ.unitName);
+    val = m_apvts.getRawParameterValue(g_paramQ.ID);
+    m_QSlider.setValue(*val);
+    m_QAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(m_apvts, g_paramQ.ID, m_QSlider);
+    addAndMakeVisible(m_QSlider);
+
+    m_FreqSlider.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
+    m_FreqSlider.setTextBoxStyle(juce::Slider::TextBoxAbove, false, 70, 20);
+    m_FreqSlider.setRange(g_paramFreq.minValue, g_paramFreq.maxValue);
+    m_FreqSlider.setTextValueSuffix(g_paramFreq.unitName);
+    val = m_apvts.getRawParameterValue(g_paramFreq.ID);
+    m_FreqSlider.setValue(*val);
+    m_FreqAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(m_apvts, g_paramFreq.ID, m_FreqSlider);
+    addAndMakeVisible(m_FreqSlider);
+
 }
 
 void PeakEqualizerGUI::paint(juce::Graphics &g)
@@ -159,7 +185,7 @@ void PeakEqualizerGUI::paint(juce::Graphics &g)
     g.setFont (15.0f);
     
     juce::String text2display = "PeakEqualizer V " + juce::String(PLUGIN_VERSION_MAJOR) + "." + juce::String(PLUGIN_VERSION_MINOR) + "." + juce::String(PLUGIN_VERSION_PATCH);
-    g.drawFittedText (text2display, getLocalBounds(), juce::Justification::centred, 1);
+    g.drawFittedText (text2display, getLocalBounds(), juce::Justification::bottomRight, 1);
 
 }
 
@@ -172,7 +198,10 @@ void PeakEqualizerGUI::resized()
 	//float scaleFactor = float(width)/g_minGuiSize_x;
 
     // use the given canvas in r
-    juce::ignoreUnused(r);
+    int height = r.getHeight();
+    m_GainSlider.setBounds(r.removeFromTop(height/4));
+    m_QSlider.setBounds(r.removeFromTop(height/4));
+    m_FreqSlider.setBounds(r.removeFromTop(height/4));
 
 
 }

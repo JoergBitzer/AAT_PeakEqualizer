@@ -52,7 +52,7 @@ EqualizerErrorCode designPeakEqualizer(std::vector<double>& b, std::vector<doubl
     {
         return F0_TOO_HIGH;
     }
-    if (Q < 0.1 || Q > 10)
+    if (Q < 0.09 || Q > 11)
     {
         return Q_SETTING_OUT_OF_RANGE;
     }
