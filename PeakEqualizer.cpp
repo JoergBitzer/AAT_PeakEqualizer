@@ -2,6 +2,7 @@
 #include "PeakEqualizer.h"
 
 #include "EqualizerDesign.h"
+#include "hermite-cubic-curve.h"
 
 PeakEqualizerAudio::PeakEqualizerAudio()
 :SynchronBlockProcessor()
@@ -156,6 +157,7 @@ PeakEqualizerGUI::PeakEqualizerGUI(juce::AudioProcessorValueTreeState& apvts)
     m_GainSlider.setValue(*val);
     m_gainAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(m_apvts, g_paramGain.ID, m_GainSlider);
     addAndMakeVisible(m_GainSlider);
+    m_GainSlider.onValueChange = [this] { repaint(); };
 
     m_QSlider.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
     m_QSlider.setTextBoxStyle(juce::Slider::TextBoxAbove, false, 70, 20);
@@ -165,6 +167,7 @@ PeakEqualizerGUI::PeakEqualizerGUI(juce::AudioProcessorValueTreeState& apvts)
     m_QSlider.setValue(*val);
     m_QAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(m_apvts, g_paramQ.ID, m_QSlider);
     addAndMakeVisible(m_QSlider);
+    m_QSlider.onValueChange = [this] { repaint(); };
 
     m_FreqSlider.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
     m_FreqSlider.setTextBoxStyle(juce::Slider::TextBoxAbove, false, 70, 20);
@@ -174,18 +177,82 @@ PeakEqualizerGUI::PeakEqualizerGUI(juce::AudioProcessorValueTreeState& apvts)
     m_FreqSlider.setValue(*val);
     m_FreqAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(m_apvts, g_paramFreq.ID, m_FreqSlider);
     addAndMakeVisible(m_FreqSlider);
+    m_FreqSlider.onValueChange = [this] { repaint(); };
 
 }
 
 void PeakEqualizerGUI::paint(juce::Graphics &g)
 {
     g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId).brighter(0.3f));
+    float gain = m_GainSlider.getValue();
+    float Q = (m_QSlider.getValue());
+    float Freq = (m_FreqSlider.getValue());
 
+    float relGain = gain/g_paramGain.maxValue;
+    float relQ = (1.f-(Q-g_paramQ.minValue)/(g_paramQ.maxValue-g_paramQ.minValue))*0.8;
+    if (relQ < 0.f)
+    {
+        relQ = 0.f;
+    }
+    if (relQ > 1.f)
+    {
+        relQ = 1.f;
+    }
+    float relFreq = (Freq-g_paramFreq.minValue)/(g_paramFreq.maxValue-g_paramFreq.minValue);
+    float leftQ = relFreq - relQ/2 -0.05f;
+    float rightQ = relFreq + relQ/2 + 0.05f;
+/*    if (leftQ < 0.f)
+    {
+        leftQ = 0.f;
+    }
+    if (rightQ > 1.f)
+    {
+        rightQ = 1.f;
+    } //*/
+    // spline for the EQ curve
+    HermiteCubicCurve <float> curve;
+    curve.clear();
+    if (leftQ <  0.f)
+        curve.add(leftQ, 0.0f);
+    else
+        curve.add(0.f, 0.0f);
+
+    curve.add(leftQ, 0.5f*relGain);
+    curve.add(relFreq, relGain);
+    curve.add(rightQ, 0.5f*relGain);
+    curve.add(1.0f, 0.0f);
+    curve.finish();
+    // draw the curve
     g.setColour (juce::Colours::white);
-    g.setFont (15.0f);
+    int height = getHeight();
+    int width = getWidth();
+    int margin = 10;
+    g.fillRect(0,height*3/4 + margin ,width,height/4 - 2*margin);
+ 
+    g.setColour (juce::Colours::red);
+ 
+    int startheight = +7.f/8.f*height;
+    
+    int drawheight = height/8-margin;
+    float x1 = 0.f;
+    float y1 = curve.at(x1);
+    for (int i = 1; i < width; i++)
+    {
+        float x2 = float(i)/width;
+        float y2 = curve.at(x2);
+        //g.drawEllipse(x*getWidth(), -y*drawheight + startheight, 2, 2, 2);
+        if (x2>=0)
+            g.drawLine(x1*width,-y1*drawheight + startheight,x2*width,-y2*drawheight + startheight,2);
+        x1 = x2;
+        y1 = y2;
+    }
+
+    // draw the version number
+    g.setColour (juce::Colours::white);
+    g.setFont (margin);
     
     juce::String text2display = "PeakEqualizer V " + juce::String(PLUGIN_VERSION_MAJOR) + "." + juce::String(PLUGIN_VERSION_MINOR) + "." + juce::String(PLUGIN_VERSION_PATCH);
-    g.drawFittedText (text2display, getLocalBounds(), juce::Justification::bottomRight, 1);
+    g.drawFittedText (text2display, getLocalBounds(), juce::Justification::bottomLeft, 1);
 
 }
 
