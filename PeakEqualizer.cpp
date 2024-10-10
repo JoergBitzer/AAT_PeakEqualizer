@@ -4,7 +4,7 @@
 #include "EqualizerDesign.h"
 
 PeakEqualizerAudio::PeakEqualizerAudio()
-:SynchronBlockProcessor()
+:SynchronBlockProcessor() 
 {
 }
 

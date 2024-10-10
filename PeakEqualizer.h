@@ -67,9 +67,9 @@ private:
 	jade::AudioProcessParameter<float> m_gainParam;
 	jade::AudioProcessParameter<float> m_QParam;
 	jade::AudioProcessParameter<float> m_FreqParam;
-	juce::SmoothedValue<float> m_smoothedGain;
-	juce::SmoothedValue<float> m_smoothedQ;
-	juce::SmoothedValue<float> m_smoothedFreq;
+	juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> m_smoothedGain;
+	juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> m_smoothedQ;
+	juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> m_smoothedFreq;
 	
 };
 class PeakEqualizerGUI : public juce::Component
