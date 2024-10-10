@@ -49,30 +49,50 @@ void PeakEqualizerAudio::prepareToPlay(double sampleRate, int max_samplesPerBloc
         m_state_a1[i] = 0.f;
         m_state_a2[i] = 0.f;
     }
+    float paramsampleRate = 1.f/(g_desired_blocksize_ms * 0.001);
+    m_smoothedGain.reset(paramsampleRate, 0.05);
+    m_smoothedQ.reset(paramsampleRate, 0.05);
+    m_smoothedFreq.reset(paramsampleRate, 0.05);
+    m_smoothedGain.setCurrentAndTargetValue(m_gain);
+    m_smoothedQ.setCurrentAndTargetValue(m_Q);
+    m_smoothedFreq.setCurrentAndTargetValue(m_f0);
 
 }
 
 int PeakEqualizerAudio::processSynchronBlock(juce::AudioBuffer<float> & buffer, juce::MidiBuffer &midiMessages)
 {
     bool somethingchanged = false;
-    somethingchanged |= m_gainParam.updateWithNotification(m_gain);
-    somethingchanged |= m_QParam.updateWithNotification(m_Q);
-    somethingchanged |= m_FreqParam.updateWithNotification(m_f0);
-    if (somethingchanged)
+    bool somethingchangedGain = m_gainParam.updateWithNotification(m_gain);
+    if (somethingchangedGain)
     {
-        EqualizerErrorCode error = designPeakEqualizer(m_b, m_a, m_f0, m_Q, m_gain, m_fs);
-        if (error != NO_ERROR)
-        {
-            // handle error
-            m_b.resize(3);
-            m_a.resize(3);
-            m_b[0] = 1.0;
-            m_b[1] = 0.0;
-            m_b[2] = 0.0;
-            m_a[0] = 1.0;
-            m_a[1] = 0.0;
-            m_a[2] = 0.0;
-        }
+        m_smoothedGain.setTargetValue(m_gain);
+    }
+    somethingchanged != somethingchangedGain;
+    bool somethingchangedQ = m_QParam.updateWithNotification(m_Q);
+    if (somethingchangedQ)
+    {
+        m_smoothedQ.setTargetValue(m_Q);
+    }
+    bool somethingchangedFreq = m_FreqParam.updateWithNotification(m_f0);
+    if (somethingchangedFreq)
+    {
+        m_smoothedFreq.setTargetValue(m_f0);
+    }
+    float curGain = m_smoothedGain.getNextValue();
+    float curQ = m_smoothedQ.getNextValue();
+    float curFreq = m_smoothedFreq.getNextValue();
+    EqualizerErrorCode error = designPeakEqualizer(m_b, m_a, curFreq, curQ, curGain, m_fs);
+    if (error != NO_ERROR)
+    {
+        // handle error
+        m_b.resize(3);
+        m_a.resize(3);
+        m_b[0] = 1.0;
+        m_b[1] = 0.0;
+        m_b[2] = 0.0;
+        m_a[0] = 1.0;
+        m_a[1] = 0.0;
+        m_a[2] = 0.0;
     }
 
     juce::ignoreUnused(midiMessages);
