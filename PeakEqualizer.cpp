@@ -154,6 +154,7 @@ PeakEqualizerGUI::PeakEqualizerGUI(juce::AudioProcessorValueTreeState& apvts)
     m_GainSlider.setRange(g_paramGain.minValue, g_paramGain.maxValue);
     m_GainSlider.setTextValueSuffix(g_paramGain.unitName);
     auto val = m_apvts.getRawParameterValue(g_paramGain.ID);
+    m_GainSlider.onValueChange = [this](){repaint();};
     m_GainSlider.setValue(*val);
     m_gainAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(m_apvts, g_paramGain.ID, m_GainSlider);
     addAndMakeVisible(m_GainSlider);
@@ -204,11 +205,15 @@ void PeakEqualizerGUI::paint(juce::Graphics &g)
 
     g.setColour (juce::Colours::blue);
 
+    auto gain_param = m_apvts.getRawParameterValue(g_paramGain.ID);
+    float gain = *gain_param;
+    float rel_gain = gain/g_paramGain.maxValue;
+
     HermiteCubicCurve<float> curve;
     curve.add(0.0, 0.0);
-    curve.add(0.25, 0.5);
-    curve.add(0.5, 1.0);
-    curve.add(0.75, 0.5);
+    curve.add(0.25, rel_gain/2);
+    curve.add(0.5, rel_gain);
+    curve.add(0.75, rel_gain/2);
     curve.add(1.0, 0.0);
     curve.finish();
 
