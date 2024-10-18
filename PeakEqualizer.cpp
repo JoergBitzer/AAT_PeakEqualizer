@@ -176,10 +176,30 @@ PeakEqualizerGUI::PeakEqualizerGUI(juce::AudioProcessorValueTreeState& apvts)
     addAndMakeVisible(m_FreqSlider);
 
 }
-
+ 
 void PeakEqualizerGUI::paint(juce::Graphics &g)
 {
     g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId).brighter(0.3f));
+
+    // Dreeicke zeichnen
+    g.setColour (juce::Colours::red);
+    float x0,x1,x2,y0,y1,y2;
+    int height = getHeight();
+    int width = getWidth();
+    x0 = 0.f;
+    y0 = 1.f;
+    x1 = 0.5f;
+    y1 = 0.f;
+    x2 = 1.f;
+    y2 = 1.f;
+
+    int xstart = 0;
+    int ystart = 3*height/4;
+    int drawwidth = width;
+    int drawheight = height/4;
+
+    g.drawLine(x0*drawwidth+xstart, y0*drawheight+ystart, x1*drawwidth+xstart, y1*drawheight+ystart, 2.0f);
+    g.drawLine(x1*drawwidth + xstart, y1*drawheight + ystart, x2*drawwidth + xstart, y2*drawheight + ystart, 2.0f);
 
     g.setColour (juce::Colours::white);
     g.setFont (15.0f);
