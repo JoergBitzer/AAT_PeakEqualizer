@@ -2,6 +2,7 @@
 #include "PeakEqualizer.h"
 
 #include "EqualizerDesign.h"
+#include "hermite-cubic-curve.h"
 
 PeakEqualizerAudio::PeakEqualizerAudio()
 :SynchronBlockProcessor()
@@ -200,6 +201,33 @@ void PeakEqualizerGUI::paint(juce::Graphics &g)
 
     g.drawLine(x0*drawwidth+xstart, y0*drawheight+ystart, x1*drawwidth+xstart, y1*drawheight+ystart, 2.0f);
     g.drawLine(x1*drawwidth + xstart, y1*drawheight + ystart, x2*drawwidth + xstart, y2*drawheight + ystart, 2.0f);
+
+    g.setColour (juce::Colours::blue);
+
+    HermiteCubicCurve<float> curve;
+    curve.add(0.0, 0.0);
+    curve.add(0.25, 0.5);
+    curve.add(0.5, 1.0);
+    curve.add(0.75, 0.5);
+    curve.add(1.0, 0.0);
+    curve.finish();
+
+    ystart = 7*height/8;
+    drawheight = height/8;
+    x1 = 0.f;
+    y1 = curve.at(x1);
+    for (int i = 1; i < width; i++)
+    {
+        x2 = float(i)/width;
+        y2 = curve.at(x2);
+        g.drawLine(x1*drawwidth+xstart, -y1*drawheight+ystart, x2*drawwidth+xstart, -y2*drawheight+ystart, 2.0f);
+        x1 = x2;
+        y1 = y2;
+    }
+
+
+
+
 
     g.setColour (juce::Colours::white);
     g.setFont (15.0f);
