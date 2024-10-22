@@ -69,6 +69,24 @@ private:
 	jade::AudioProcessParameter<float> m_FreqParam;
 	
 };
+
+class PeakEQSimpleTF : public juce::Component
+{
+public:
+	PeakEQSimpleTF();
+	void paint(juce::Graphics& g) override;
+	void resized() override;
+	void setQ(float Q){m_Q = Q; repaint();};
+	void setFreq(float freq){m_Freq = freq; repaint();};
+	void setGain(float gain){m_Gain = gain; repaint();};
+
+private:
+	float m_Q;
+	float m_Freq;
+	float m_Gain;
+
+};
+
 class PeakEqualizerGUI : public juce::Component
 {
 public:
@@ -81,6 +99,7 @@ private:
 	juce::Slider m_GainSlider;
 	juce::Slider m_QSlider;
 	juce::Slider m_FreqSlider;
+	PeakEQSimpleTF m_tf;
 	std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> m_gainAttachment;
 	std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> m_QAttachment;
 	std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> m_FreqAttachment; 

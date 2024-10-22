@@ -154,10 +154,11 @@ PeakEqualizerGUI::PeakEqualizerGUI(juce::AudioProcessorValueTreeState& apvts)
     m_GainSlider.setRange(g_paramGain.minValue, g_paramGain.maxValue);
     m_GainSlider.setTextValueSuffix(g_paramGain.unitName);
     auto val = m_apvts.getRawParameterValue(g_paramGain.ID);
-    m_GainSlider.onValueChange = [this](){repaint();};
+    m_GainSlider.onValueChange = [this](){m_tf.setGain(m_GainSlider.getValue());};
     m_GainSlider.setValue(*val);
     m_gainAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(m_apvts, g_paramGain.ID, m_GainSlider);
     addAndMakeVisible(m_GainSlider);
+    m_tf.setGain(*val);
 
     m_QSlider.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
     m_QSlider.setTextBoxStyle(juce::Slider::TextBoxAbove, false, 70, 20);
@@ -167,6 +168,7 @@ PeakEqualizerGUI::PeakEqualizerGUI(juce::AudioProcessorValueTreeState& apvts)
     m_QSlider.setValue(*val);
     m_QAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(m_apvts, g_paramQ.ID, m_QSlider);
     addAndMakeVisible(m_QSlider);
+    m_tf.setQ(*val);
 
     m_FreqSlider.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
     m_FreqSlider.setTextBoxStyle(juce::Slider::TextBoxAbove, false, 70, 20);
@@ -176,66 +178,15 @@ PeakEqualizerGUI::PeakEqualizerGUI(juce::AudioProcessorValueTreeState& apvts)
     m_FreqSlider.setValue(*val);
     m_FreqAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(m_apvts, g_paramFreq.ID, m_FreqSlider);
     addAndMakeVisible(m_FreqSlider);
-
+    m_tf.setFreq(*val);
+    addAndMakeVisible(m_tf);
 }
  
 void PeakEqualizerGUI::paint(juce::Graphics &g)
 {
     g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId).brighter(0.3f));
-
-    // Dreeicke zeichnen
-    g.setColour (juce::Colours::red);
-    float x0,x1,x2,y0,y1,y2;
-    int height = getHeight();
-    int width = getWidth();
-    x0 = 0.f;
-    y0 = 1.f;
-    x1 = 0.5f;
-    y1 = 0.f;
-    x2 = 1.f;
-    y2 = 1.f;
-
-    int xstart = 0;
-    int ystart = 3*height/4;
-    int drawwidth = width;
-    int drawheight = height/4;
-
-    g.drawLine(x0*drawwidth+xstart, y0*drawheight+ystart, x1*drawwidth+xstart, y1*drawheight+ystart, 2.0f);
-    g.drawLine(x1*drawwidth + xstart, y1*drawheight + ystart, x2*drawwidth + xstart, y2*drawheight + ystart, 2.0f);
-
-    g.setColour (juce::Colours::blue);
-
-    auto gain_param = m_apvts.getRawParameterValue(g_paramGain.ID);
-    float gain = *gain_param;
-    float rel_gain = gain/g_paramGain.maxValue;
-
-    HermiteCubicCurve<float> curve;
-    curve.add(0.0, 0.0);
-    curve.add(0.25, rel_gain/2);
-    curve.add(0.5, rel_gain);
-    curve.add(0.75, rel_gain/2);
-    curve.add(1.0, 0.0);
-    curve.finish();
-
-    ystart = 7*height/8;
-    drawheight = height/8;
-    x1 = 0.f;
-    y1 = curve.at(x1);
-    for (int i = 1; i < width; i++)
-    {
-        x2 = float(i)/width;
-        y2 = curve.at(x2);
-        g.drawLine(x1*drawwidth+xstart, -y1*drawheight+ystart, x2*drawwidth+xstart, -y2*drawheight+ystart, 2.0f);
-        x1 = x2;
-        y1 = y2;
-    }
-
-
-
-
-
     g.setColour (juce::Colours::white);
-    g.setFont (15.0f);
+    g.setFont (10.0f);
     
     juce::String text2display = "PeakEqualizer V " + juce::String(PLUGIN_VERSION_MAJOR) + "." + juce::String(PLUGIN_VERSION_MINOR) + "." + juce::String(PLUGIN_VERSION_PATCH);
     g.drawFittedText (text2display, getLocalBounds(), juce::Justification::bottomLeft, 1);
@@ -255,6 +206,53 @@ void PeakEqualizerGUI::resized()
     m_GainSlider.setBounds(r.removeFromTop(height/4));
     m_QSlider.setBounds(r.removeFromTop(height/4));
     m_FreqSlider.setBounds(r.removeFromTop(height/4));
+    r.reduce(15,10);
+    m_tf.setBounds(r);
+
+}
+
+PeakEQSimpleTF::PeakEQSimpleTF()
+{
+}
+
+void PeakEQSimpleTF::paint(juce::Graphics &g)
+{
+    g.setColour (juce::Colours::white);
+    g.fillAll ();
+
+    // Dreeicke zeichnen
+    g.setColour (juce::Colours::red);
+    float x0,x1,x2,y0,y1,y2;
+    int height = getHeight();
+    int width = getWidth();
+    float rel_gain = m_Gain/24.f;
+
+    HermiteCubicCurve<float> curve;
+    curve.add(0.0, 0.0);
+    curve.add(0.25, rel_gain/2);
+    curve.add(0.5, rel_gain);
+    curve.add(0.75, rel_gain/2);
+    curve.add(1.0, 0.0);
+    curve.finish();
+
+    int ystart = height/2;
+    int drawheight = height/2;
+    int xstart = 0;
+    int drawwidth = width;
+    x1 = 0.f;
+    y1 = curve.at(x1);
+    for (int i = 1; i < width; i++)
+    {
+        x2 = float(i)/width;
+        y2 = curve.at(x2);
+        g.drawLine(x1*drawwidth+xstart, -y1*drawheight+ystart, x2*drawwidth+xstart, -y2*drawheight+ystart, 2.0f);
+        x1 = x2;
+        y1 = y2;
+    }
 
 
+}
+
+void PeakEQSimpleTF::resized()
+{
 }
