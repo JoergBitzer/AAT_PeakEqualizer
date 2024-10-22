@@ -185,7 +185,7 @@ void PeakEqualizerGUI::paint(juce::Graphics &g)
     g.setFont (15.0f);
     
     juce::String text2display = "PeakEqualizer V " + juce::String(PLUGIN_VERSION_MAJOR) + "." + juce::String(PLUGIN_VERSION_MINOR) + "." + juce::String(PLUGIN_VERSION_PATCH);
-    g.drawFittedText (text2display, getLocalBounds(), juce::Justification::bottomRight, 1);
+    g.drawFittedText (text2display, getLocalBounds(), juce::Justification::bottomLeft, 1);
 
 }
 
