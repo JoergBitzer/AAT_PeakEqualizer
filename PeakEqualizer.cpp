@@ -2,7 +2,6 @@
 #include "PeakEqualizer.h"
 
 #include "EqualizerDesign.h"
-#include "hermite-cubic-curve.h"
 
 PeakEqualizerAudio::PeakEqualizerAudio()
 :SynchronBlockProcessor()
@@ -154,7 +153,6 @@ PeakEqualizerGUI::PeakEqualizerGUI(juce::AudioProcessorValueTreeState& apvts)
     m_GainSlider.setRange(g_paramGain.minValue, g_paramGain.maxValue);
     m_GainSlider.setTextValueSuffix(g_paramGain.unitName);
     auto val = m_apvts.getRawParameterValue(g_paramGain.ID);
-    m_GainSlider.onValueChange = [this](){repaint();};
     m_GainSlider.setValue(*val);
     m_gainAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(m_apvts, g_paramGain.ID, m_GainSlider);
     addAndMakeVisible(m_GainSlider);
@@ -178,62 +176,10 @@ PeakEqualizerGUI::PeakEqualizerGUI(juce::AudioProcessorValueTreeState& apvts)
     addAndMakeVisible(m_FreqSlider);
 
 }
- 
+
 void PeakEqualizerGUI::paint(juce::Graphics &g)
 {
     g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId).brighter(0.3f));
-
-    // Dreeicke zeichnen
-    g.setColour (juce::Colours::red);
-    float x0,x1,x2,y0,y1,y2;
-    int height = getHeight();
-    int width = getWidth();
-    x0 = 0.f;
-    y0 = 1.f;
-    x1 = 0.5f;
-    y1 = 0.f;
-    x2 = 1.f;
-    y2 = 1.f;
-
-    int xstart = 0;
-    int ystart = 3*height/4;
-    int drawwidth = width;
-    int drawheight = height/4;
-
-    g.drawLine(x0*drawwidth+xstart, y0*drawheight+ystart, x1*drawwidth+xstart, y1*drawheight+ystart, 2.0f);
-    g.drawLine(x1*drawwidth + xstart, y1*drawheight + ystart, x2*drawwidth + xstart, y2*drawheight + ystart, 2.0f);
-
-    g.setColour (juce::Colours::blue);
-
-    auto gain_param = m_apvts.getRawParameterValue(g_paramGain.ID);
-    float gain = *gain_param;
-    float rel_gain = gain/g_paramGain.maxValue;
-
-    HermiteCubicCurve<float> curve;
-    curve.add(0.0, 0.0);
-    curve.add(0.25, rel_gain/2);
-    curve.add(0.5, rel_gain);
-    curve.add(0.75, rel_gain/2);
-    curve.add(1.0, 0.0);
-    curve.finish();
-
-    ystart = 7*height/8;
-    drawheight = height/8;
-    x1 = 0.f;
-    y1 = curve.at(x1);
-    for (int i = 1; i < width; i++)
-    {
-        x2 = float(i)/width;
-        y2 = curve.at(x2);
-        g.drawLine(x1*drawwidth+xstart, -y1*drawheight+ystart, x2*drawwidth+xstart, -y2*drawheight+ystart, 2.0f);
-        x1 = x2;
-        y1 = y2;
-    }
-
-
-
-
-
     g.setColour (juce::Colours::white);
     g.setFont (15.0f);
     
