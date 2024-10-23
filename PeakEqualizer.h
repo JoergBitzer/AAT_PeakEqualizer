@@ -67,8 +67,34 @@ private:
 	jade::AudioProcessParameter<float> m_gainParam;
 	jade::AudioProcessParameter<float> m_QParam;
 	jade::AudioProcessParameter<float> m_FreqParam;
-	
+
+	juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> m_smoothedGain;
+	juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> m_smoothedFreq;
+	juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> m_smoothedQ;
+	float m_smoothingTime_s = 0.05f;
+	float m_smoothingSamplerate; 
+
 };
+
+class PeakEqualizerTFDrawer : public juce::Component
+{
+public:
+	PeakEqualizerTFDrawer(){};
+	void paint(juce::Graphics& g) override;
+	void resized() {};
+	void setQ(float Q){m_Q = Q; repaint();};
+	void setFreq(float Freq) {m_Freq = Freq; repaint();};
+	void setGain(float Gain) {m_Gain = Gain; repaint();};
+
+private:
+	float m_Gain = 0.f;
+	float m_Q = logf(1.f);
+	float m_Freq = logf(1000.f);
+
+};
+
+
+
 class PeakEqualizerGUI : public juce::Component
 {
 public:
@@ -84,5 +110,5 @@ private:
 	std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> m_gainAttachment;
 	std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> m_QAttachment;
 	std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> m_FreqAttachment; 
-
+	PeakEqualizerTFDrawer m_drawer;
 };

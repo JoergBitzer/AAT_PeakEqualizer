@@ -6,7 +6,7 @@
 
 set(TARGET_NAME PeakEqualizer)
 
-project(${TARGET_NAME} VERSION 0.1.0)
+project(${TARGET_NAME} VERSION 0.2.3)
 
 configure_file(Versioning.h.in Versioning.h)
 
